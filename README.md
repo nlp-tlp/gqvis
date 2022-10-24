@@ -15,7 +15,7 @@ It's not an actual python package at the moment but the easiest way of importing
 It's very barebones at the moment - the usage is as follows:
 
     from d3_graph_vis import D3Graph
-    d3_graph = D3Graph(password = 'password')
+    d3_graph = D3Graph(password = 'password') # (change this to the password of your Neo4j graph)
     d3_graph.init_d3()
 
     d3_graph.visualise('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
