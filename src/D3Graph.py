@@ -27,37 +27,6 @@ class D3Graph(object):
         self.driver = GraphDatabase.driver(
             "neo4j://localhost:7687", auth=("neo4j", "password")
         )
-        self.d3_ready = False
-
-    def init_d3(self):
-        """Init d3, i.e. render a HTML with a <script> tag in it with D3.
-
-        Returns:
-            HTML: The script tag.
-
-        Raises:
-            ValueError: If D3 has already been loaded.
-        """
-        if self.d3_ready:
-            raise ValueError("D3 already initialised.")
-        self.d3_ready = True
-        return HTML(
-            """
-            <script src="https://d3js.org/d3.v7.min.js"></script>
-            <script>
-              require.config({
-                  paths: {
-                      d3: "https://d3js.org/d3.v7.min"
-                   }
-              });
-
-              require(["d3"], function(d3) {
-                  window.d3 = d3;
-              });
-
-            </script>
-            """
-        )
 
     def visualise(self, query: str):
         """Visualise the given query via a D3 graph.
@@ -68,19 +37,15 @@ class D3Graph(object):
         Returns:
             HTML: A HTML snippet with the graph rendered inside of it.
 
-        Raises:
-            ValueError: If d3 has not yet been initialised.
         """
-        if not self.d3_ready:
-            raise ValueError(
-                "Please initialise d3 first via d3_graph.init_d3()."
-            )
 
         # Load the template from template.html. This will be populated with the
         # result of the query.
         current_path = pathlib.Path(__file__).parent.resolve()
         template = ""
-        with open(os.path.join(current_path, "template.html"), "r") as f:
+        with open(
+            os.path.join(current_path, "template/template.html"), "r"
+        ) as f:
             template = f.read()
 
         # Run the query via neo4j.

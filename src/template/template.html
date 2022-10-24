@@ -1,22 +1,43 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
 <style>
   circle {
     cursor: pointer;
   }
   text {
     pointer-events: none;
-    font-family: sans-serif;
+    font-family: "Open Sans", sans-serif;
+    font-size: 12;
   }
 
   g#links {
     opacity: 0.3;
   }
+
 </style>
-<svg id="chart-${chart_id}" width="960" height="600"></svg>
-<h3>test</h3>
-<!-- <script src="https://d3js.org/d3.v7.min.js"></script> -->
-<script></script>
+<svg id="svg-chart" width="960" height="600"></svg>
+<!-- Note d3 is loaded via require.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+<script>
+  // This bit is a bit of a pain.
+  // I wanted a way to run this both directly in the browser (for developing),
+  // and in Jupyter.
+  // When developing, I needed some 'dummy data' to populate the graph.
+  // The following script tag attempts to load the file 'dummyData.js' (which
+  // contains the dummy data). It will fail when running on jupyter.
+  //
+  // Whether or not the dummyData file loads (and dummyData is not null) determines
+  // whether the CHART_SELECTOR (the id of the svg chart) will be fixed or
+  // dynamic based on template injection, and also whether the nodes and links are from
+  // the dummyData or dynamic via template injection.
+  dummyData = null;
+  console.log(
+    "Attempting to load dummy data. This will fail if running via " +
+      "jupyter notebook, and may throw console errors - this is OK."
+  );
+</script>
+<script src="dummyData.js"></script>
 <script>
   require.config({
     paths: {
@@ -25,14 +46,29 @@
   });
 
   require(["d3"], function (d3) {
-    /* Code found here:
+    const CHART_SELECTOR = dummyData ? "#chart" : "#chart-${chart_id}";
+    const svg_chart = document.getElementById("svg-chart");
 
-https://observablehq.com/@brunolaranjeira/d3-v6-force-directed-graph-with-directional-straight-arrow
-https://bl.ocks.org/mbostock/4062045
-https://github.com/nlp-tlp/aquila/blob/master/views/visualisations/entity_linking_graph.jade
-https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line-in-d3
+    // Dynamically set the id of the svg.
+    // If in development mode (i.e. dummyData is not null), the id will just be
+    // "#chart".
+    svg_chart.id = CHART_SELECTOR.substring(1, CHART_SELECTOR.length);
+    let data = {};
+    if (dummyData) {
+      data = dummyData;
+    } else {
+      data = {
+        nodes: JSON.parse("${nodes}".replace(/'/g, '"')),
+        links: JSON.parse("${links}".replace(/'/g, '"')),
+      };
+    }
 
-*/
+    /* Code found in a range of places, spliced together from the following:
+    https://observablehq.com/@brunolaranjeira/d3-v6-force-directed-graph-with-directional-straight-arrow
+    https://bl.ocks.org/mbostock/4062045
+    https://github.com/nlp-tlp/aquila/blob/master/views/visualisations/entity_linking_graph.jade
+    https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line-in-d3
+    */
 
     // https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors
     function lightenDarkenColor(col, amt) {
@@ -94,16 +130,7 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
     let height = 600;
     let width = 600;
 
-    let data = {
-      nodes:
-        JSON.parse("${nodes}".replace(/'/g, '"'))
-      ,
-      links: JSON.parse("${links}".replace(/'/g, '"'))
-
-    };
-
-    console.log("DATA", data)
-
+    console.log("DATA", data);
 
     const links = data.links.map((d) => Object.create(d));
     const nodes = data.nodes.map((d) => Object.create(d));
@@ -140,12 +167,6 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
     const getColour = (d) => {
       return colourMap[d.group];
     };
-    console.log(colourMap);
-
-    // const simulation = d3.forceSimulation(nodes)
-    //   .force("link", d3.forceLink(links).id(d => d.id))
-    //   .force("charge", d3.forceManyBody())
-    //   .force("center", d3.forceCenter(width / 2, height / 2))
 
     const simulation = d3
       .forceSimulation(nodes)
@@ -163,7 +184,7 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
       .force("center", d3.forceCenter(width / 2, height / 2));
 
     const svg = d3
-      .select("#chart-${chart_id}")
+      .select(CHART_SELECTOR)
       .attr("viewBox", [0, 0, width, height]);
 
     // svg_g: The 'g' within svg, which seems to make zooming/panning smoother
@@ -233,6 +254,7 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
       .append("text")
 
       .text((d) => d.name)
+      .attr("font-size", 12)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central");
 
@@ -244,6 +266,7 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
       .append("text")
 
       .text((d) => d.type)
+      .attr("font-size", 10)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central");
 
@@ -266,22 +289,33 @@ https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line
       );
 
       node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-      text.attr("x", (d) => d.x).attr("y", (d) => d.y);
-      links_text.attr("x", (d) => ((d.source.x + d.target.x) / 2)).attr("y", (d) => ((d.source.y + d.target.y) / 2));
+      text.attr("x", (d) => Math.floor(d.x)).attr("y", (d) => Math.floor(d.y));
+      links_text
+        .attr("x", (d) => (d.source.x + d.target.x) / 2)
+        .attr("y", (d) => (d.source.y + d.target.y) / 2);
     });
 
     let zoom = d3.zoom().on("zoom", handleZoom);
 
+
     function handleZoom(e) {
-      d3.select("svg g").attr("transform", e.transform);
-      console.log(e);
-      d3.selectAll("text").attr("font-size", Math.round(12 / e.transform.k));
+      svg_g.attr("transform", e.transform);
+      text.attr("font-size", 12 / e.transform.k ** 0.7);
+      links_text.attr("font-size", 10 / e.transform.k ** 0.7);
     }
 
     function initZoom() {
-      d3.select("svg").call(zoom);
+      svg.call(zoom);
     }
 
     initZoom();
+
+    if (dummyData) {
+      let div = document.createElement("div");
+      div.innerHTML =
+        "<h3>Note: currently in development mode using dummy data.</h3>";
+      document.body.appendChild(div);
+    }
   });
 </script>
+<!-- <script src="graphVisualisation.js"></script> -->
