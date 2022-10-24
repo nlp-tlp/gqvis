@@ -96,8 +96,6 @@ class D3Graph(object):
         with self.graph_driver.session() as session:
             nodes, links = session.read_transaction(_run_neoj4_query, query)
 
-        print(nodes)
-
         return _build_html_template(nodes, links)
 
 
