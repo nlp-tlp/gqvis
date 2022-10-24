@@ -1,6 +1,6 @@
 # D3 Graph Vis
 
-A simple package for visualising a Neo4j graph in a Jupyter notebook via D3.js.
+A simple package for visualising a graph in a Jupyter notebook via D3.js. Supports lists of nodes/edges as well as Cypher queries to a Neo4j database.
 
 ## Installation
 
