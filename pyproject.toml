@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "d3_graph_vis"
+version = "0.1.0"
+description = ""
+authors = ["Michael Stewart <michael.stewart.webdev@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+py2neo = "^2021.2.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

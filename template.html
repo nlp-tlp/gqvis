@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<style>
+  circle {
+    cursor: pointer;
+  }
+  text {
+    pointer-events: none;
+    font-family: sans-serif;
+  }
+
+  g#links {
+    opacity: 0.3;
+  }
+</style>
+<svg id="chart-${chart_id}" width="960" height="600"></svg>
+<h3>test</h3>
+<!-- <script src="https://d3js.org/d3.v7.min.js"></script> -->
+<script></script>
+<script>
+  require.config({
+    paths: {
+      d3: "https://d3js.org/d3.v7.min",
+    },
+  });
+
+  require(["d3"], function (d3) {
+    /* Code found here:
+
+https://observablehq.com/@brunolaranjeira/d3-v6-force-directed-graph-with-directional-straight-arrow
+https://bl.ocks.org/mbostock/4062045
+https://github.com/nlp-tlp/aquila/blob/master/views/visualisations/entity_linking_graph.jade
+https://observablehq.com/@harrylove/draw-an-arrowhead-marker-connected-to-a-line-in-d3
+
+*/
+
+    // https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors
+    function lightenDarkenColor(col, amt) {
+      let usePound = false;
+      if (col[0] == "#") {
+        col = col.slice(1);
+        usePound = true;
+      }
+
+      let num = parseInt(col, 16);
+
+      let r = (num >> 16) + amt;
+
+      if (r > 255) r = 255;
+      else if (r < 0) r = 0;
+
+      let b = ((num >> 8) & 0x00ff) + amt;
+
+      if (b > 255) b = 255;
+      else if (b < 0) b = 0;
+
+      let g = (num & 0x0000ff) + amt;
+
+      if (g > 255) g = 255;
+      else if (g < 0) g = 0;
+
+      return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
+    }
+
+    let drag = (simulation) => {
+      function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+      }
+
+      function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+      }
+
+      function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+      }
+
+      return d3
+        .drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    };
+
+    const scale = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const nodeSize = 40;
+
+    let height = 600;
+    let width = 600;
+
+    let data = {
+      nodes:
+        JSON.parse("${nodes}".replace(/'/g, '"'))
+      ,
+      links: JSON.parse("${links}".replace(/'/g, '"'))
+
+    };
+
+    console.log("DATA", data)
+
+
+    const links = data.links.map((d) => Object.create(d));
+    const nodes = data.nodes.map((d) => Object.create(d));
+
+    const colours = [
+      "#99ffcc",
+      "#ffcccc",
+      "#ccccff",
+      "#ccff99",
+      "#ccffcc",
+      "#ccffff",
+      "#ffcc99",
+      "#ffccff",
+      "#ffff99",
+      "#ffffcc",
+      "#cccc99",
+      "#fbafff",
+    ];
+
+    function loadColourMap(nodes) {
+      let colourMap = {};
+      // Load the colour map
+      for (let i = 0; i < nodes.length; i++) {
+        const group = nodes[i].group;
+        if (!(group in colourMap)) {
+          colourMap[group] =
+            colours[Object.keys(colourMap).length % colours.length];
+        }
+      }
+      return colourMap;
+    }
+    colourMap = loadColourMap(nodes);
+
+    const getColour = (d) => {
+      return colourMap[d.group];
+    };
+    console.log(colourMap);
+
+    // const simulation = d3.forceSimulation(nodes)
+    //   .force("link", d3.forceLink(links).id(d => d.id))
+    //   .force("charge", d3.forceManyBody())
+    //   .force("center", d3.forceCenter(width / 2, height / 2))
+
+    const simulation = d3
+      .forceSimulation(nodes)
+      .force(
+        "link",
+        d3.forceLink(links).id((d) => d.id)
+      )
+      .force("charge", d3.forceManyBody().strength(-300))
+      // .force("x", d3.forceX())
+      // .force("y", d3.forceY())
+      .force(
+        "collide",
+        d3.forceCollide((d) => nodeSize * 1.5)
+      )
+      .force("center", d3.forceCenter(width / 2, height / 2));
+
+    const svg = d3
+      .select("#chart-${chart_id}")
+      .attr("viewBox", [0, 0, width, height]);
+
+    // svg_g: The 'g' within svg, which seems to make zooming/panning smoother
+    const svg_g = svg.append("g");
+
+    const defs = svg_g.append("defs");
+
+    const marker = defs
+      .selectAll("marker")
+      .data(["type_1"])
+      .enter()
+      .append("svg:marker")
+      .attr("id", function (d, i) {
+        return `marker_${i}`;
+      })
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", nodeSize + 3)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("svg:path")
+      .attr("fill", "#444")
+      .attr("d", "M0,-5L10,0L0,5");
+
+    const link = svg_g
+      .append("g")
+      .attr("id", "links")
+      .attr("fill", "none")
+      .attr("stroke-width", 1.5)
+      .selectAll("path")
+      .data(links)
+      .enter()
+      .append("path")
+      .attr("stroke", "#444")
+      .attr("stroke-width", 2)
+      .attr("marker-end", function (d, i) {
+        return `url("#marker_0")`;
+      })
+      .attr(
+        "d",
+        (d) =>
+          `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`
+      );
+
+    const node = svg_g
+      .append("g")
+      .attr("stroke-width", 3)
+      .selectAll("circle")
+      .data(nodes)
+      .join("circle")
+      .attr("r", nodeSize)
+      .attr("fill", getColour)
+      .attr("stroke", function (d) {
+        return lightenDarkenColor(getColour(d), -15);
+      })
+      .call(drag(simulation));
+
+    // node.append("title")
+    //   .text(d => d.id)
+
+    const text = svg_g
+      .append("g")
+      .selectAll("text")
+      .data(nodes)
+      .enter()
+      .append("text")
+
+      .text((d) => d.name)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central");
+
+    const links_text = svg_g
+      .append("g")
+      .selectAll("text")
+      .data(links)
+      .enter()
+      .append("text")
+
+      .text((d) => d.type)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central");
+
+    // .clone(true).lower()
+    // .attr("fill", "none")
+    // .attr("stroke", "black")
+    // .attr("stroke-width", 3);
+
+    simulation.on("tick", () => {
+      // link
+      //   .attr("x1", (d) => d.source.x)
+      //   .attr("y1", (d) => d.source.y)
+      //   .attr("x2", (d) => d.target.x)
+      //   .attr("y2", (d) => d.target.y);
+
+      link.attr(
+        "d",
+        (d) =>
+          `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`
+      );
+
+      node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+      text.attr("x", (d) => d.x).attr("y", (d) => d.y);
+      links_text.attr("x", (d) => ((d.source.x + d.target.x) / 2)).attr("y", (d) => ((d.source.y + d.target.y) / 2));
+    });
+
+    let zoom = d3.zoom().on("zoom", handleZoom);
+
+    function handleZoom(e) {
+      d3.select("svg g").attr("transform", e.transform);
+      console.log(e);
+      d3.selectAll("text").attr("font-size", Math.round(12 / e.transform.k));
+    }
+
+    function initZoom() {
+      d3.select("svg").call(zoom);
+    }
+
+    initZoom();
+  });
+</script>
