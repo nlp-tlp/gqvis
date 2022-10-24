@@ -4,7 +4,7 @@ A simple package for visualising a Neo4j graph in a Jupyter notebook via D3.js.
 
 ## Installation
 
-It's not an actual python package at the moment but the easiest way of importing it into a Jupyter notebook is to put it in the same folder as the notebook, install the requirements from `requirements.txt`, then call:
+It's not an actual python package at the moment but the easiest way of importing it into a Jupyter notebook is to clone this repo into the same folder as the notebook, install the requirements from `requirements.txt`, then call:
 
     from d3_graph_vis import D3Graph
 
