@@ -63,7 +63,7 @@ The second way is to use it to visualise the result of a Neo4j Cypher query. Thi
 
 Then, you can run the following:
 
-    d3_graph.visualise('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
+    d3_graph.visualise_cypher('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
 
 I am not sure whether it will work for literally any query, but it should.
 
