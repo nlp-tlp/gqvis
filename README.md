@@ -12,22 +12,70 @@ It's not an actual python package at the moment but the easiest way of importing
 
 ## Usage
 
-It's very barebones at the moment - the usage is as follows:
+First, import the package via
 
     from d3_graph_vis import D3Graph
-    d3_graph = D3Graph(password = 'password') # (change this to the password of your Neo4j graph)
+
+There are two ways to use this class.
+
+### Visualising nodes and links directly
+
+The first is to visualise a given list of nodes and edges, for example:
+
+    nodes = [
+        {
+          "id": 1,
+          "category": "Person",
+          "name": "Bob",
+        },
+        {
+          "id": 2,
+          "category": "Food",
+          "name": "Jelly",
+        },
+        {
+          "id": 3,
+          "category": "Person",
+          "name": "Alice",
+        }
+    ]
+    links = [
+        {
+          "source": 1,
+          "target": 2,
+          "type": "EATS",
+        },
+        {
+          "source": 3,
+          "target": 1,
+          "type": "LIKES",
+        },
+    ]
+    d3_graph.visualise(nodes, links)
+
+This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats chicken, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) but they aren't included in the visualisation just yet.
+
+### Visualising the result of a Neo4j Cypher query
+
+The second way is to use it to visualise the result of a Neo4j Cypher query. This requires you to have a Neo4j database running. First, connect D3Graph to neo4j via:
+
+    d3_graph.connect_to_neo4j("password")
+
+Then, you can run the following:
 
     d3_graph.visualise('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
 
-Note you only need to run the first 2 lines once.
+I am not sure whether it will work for literally any query, but it should.
 
-The way the visualisation decides on the colour of each node is based on the last label of that node, i.e. if a node had the following labels:
+### About the visualisation
+
+Nodes are coloured based on the `category` property.
+
+For the Cypher visualisation, the way the graph decides on the colour of each node is based on the last label of that node, i.e. if a node had the following labels:
 
     Entity, Item
 
 ... it would be coloured based on the `Item` label.
-
-I am not sure whether it will work for literally any query, but it should.
 
 ## Notes
 

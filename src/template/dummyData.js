@@ -2,27 +2,27 @@ dummyData = {
   nodes: [
     {
       id: 1,
-      group: "Item",
+      category: "Item",
       name: "Item",
     },
     {
       id: 2,
-      group: "Consumable",
+      category: "Consumable",
       name: "Consumable",
     },
     {
       id: 3,
-      group: "Activity",
+      category: "Activity",
       name: "Activity/Activity",
     },
     {
       id: 4,
-      group: "Activity",
+      category: "Activity",
       name: "Activity/Inspect",
     },
     {
       id: 5,
-      group: "Activity",
+      category: "Activity",
       name: "Activity/Minor_Maintenance",
     },
   ],

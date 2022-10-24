@@ -154,9 +154,9 @@
       let colourMap = {};
       // Load the colour map
       for (let i = 0; i < nodes.length; i++) {
-        const group = nodes[i].group;
-        if (!(group in colourMap)) {
-          colourMap[group] =
+        const category = nodes[i].category;
+        if (!(category in colourMap)) {
+          colourMap[category] =
             colours[Object.keys(colourMap).length % colours.length];
         }
       }
@@ -165,7 +165,7 @@
     colourMap = loadColourMap(nodes);
 
     const getColour = (d) => {
-      return colourMap[d.group];
+      return colourMap[d.category];
     };
 
     const simulation = d3

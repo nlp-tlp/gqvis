@@ -11,6 +11,8 @@ from neo4j import GraphDatabase
 from IPython.core.display import display, HTML
 from string import Template
 
+NEO4J_HOST = "neo4j://localhost:7687"
+
 
 class D3Graph(object):
 
@@ -23,13 +25,56 @@ class D3Graph(object):
         driver (neo4j.driver): The neo4j driver. Loaded upon instantiating.
     """
 
-    def __init__(self, password="password"):
-        self.driver = GraphDatabase.driver(
-            "neo4j://localhost:7687", auth=("neo4j", "password")
+    def __init__(self):
+        super(D3Graph, self).__init__()
+        self.graph_driver = None
+
+    def connect_to_neo4j(self, graph_password: str = "password"):
+        """Connect to Neo4j so that cypher queries can be visualised.
+        At the moment, only connects to the default port (feel free to change
+        if you need to run on docker or something.)
+
+        Args:
+            graph_password (str, optional): The password of the neo4j db.
+        """
+        self.graph_driver = GraphDatabase.driver(
+            NEO4J_HOST, auth=("neo4j", "password")
         )
 
-    def visualise(self, query: str):
-        """Visualise the given query via a D3 graph.
+    def visualise(self, nodes: list, links: list):
+        """Visualise the given list of nodes and links via a D3 graph.
+
+        Args:
+            nodes (list): The list of nodes.
+            links (list): The list of links (edges).
+
+        Returns:
+            HTML: A HTML snippet with the graph rendered inside of it.
+
+        Raises:
+            ValueError: If any arguments are no good.
+        """
+        if type(nodes) != list:
+            raise ValueError(
+                "Illegal argument: The first argument must be a list of nodes."
+            )
+        if len(nodes) == 0:
+            raise ValueError(
+                "Illegal argument: nodes must contain at least "
+                "one node to render."
+            )
+        if type(links) != list:
+            raise ValueError(
+                "Illegal argument: The second argument must be a "
+                "list of links."
+            )
+
+        template = _load_template()
+
+        return _build_html_template(nodes, links)
+
+    def visualise_cypher(self, query: str):
+        """Visualise the given cypher query via a D3 graph.
 
         Args:
             query (str): The Cypher query to visualise.
@@ -37,39 +82,67 @@ class D3Graph(object):
         Returns:
             HTML: A HTML snippet with the graph rendered inside of it.
 
+        Raises:
+            ValueError: If connect_to_neo4j has not yet been called.
         """
-
-        # Load the template from template.html. This will be populated with the
-        # result of the query.
-        current_path = pathlib.Path(__file__).parent.resolve()
-        template = ""
-        with open(
-            os.path.join(current_path, "template/template.html"), "r"
-        ) as f:
-            template = f.read()
+        if self.graph_driver is None:
+            raise ValueError(
+                "Cannot visualise Neo4j query as you have not yet"
+                " connected this D3Graph to Neo4j. Please run "
+                "connect_to_neo4j()."
+            )
 
         # Run the query via neo4j.
-        with self.driver.session() as session:
-            nodes, links = session.read_transaction(_run_query, query)
+        with self.graph_driver.session() as session:
+            nodes, links = session.read_transaction(_run_neoj4_query, query)
 
-        return HTML(
-            Template(template).safe_substitute(
-                {
-                    # Generate a random chart id so that D3 knows which svg
-                    # element corresponds to this graph.
-                    "chart_id": str(random.randint(0, 1000000)),
-                    "nodes": nodes,
-                    "links": links,
-                }
-            )
+        print(nodes)
+
+        return _build_html_template(nodes, links)
+
+
+def _build_html_template(nodes: list, links: list):
+    """Return a HTML template of the given nodes and links.
+
+    Args:
+        nodes (list): The list of nodes.
+        links (list): The list of links (edges).
+
+    Returns:
+        HTML: An injected HTML template.
+    """
+    template = _load_template()
+    return HTML(
+        Template(template).safe_substitute(
+            {
+                # Generate a random chart id so that D3 knows which svg
+                # element corresponds to this graph.
+                "chart_id": str(random.randint(0, 1000000)),
+                "nodes": nodes,
+                "links": links,
+            }
         )
+    )
 
 
-def _run_query(tx, query):
-    """Run the query via Neo4j.
+def _load_template():
+    """Load the template from template.html. This will be populated with the
+    given nodes and links later.
+    """
+    current_path = pathlib.Path(__file__).parent.resolve()
+    template = ""
+    with open(os.path.join(current_path, "template/template.html"), "r") as f:
+        template = f.read()
+    return template
+
+
+def _run_neoj4_query(tx, query):
+    """Run the given query via Neo4j. Return a list of nodes, and a list of
+    links (edges), that can be visualised via D3Graph's visualise() method.
 
     Args:
         tx (neo4j): The neo4j driver.
+        query (str): The cypher query to run.
 
     Returns:
         list, list: A list of nodes, and list of links.
@@ -99,7 +172,7 @@ def _run_query(tx, query):
                 # in the visualisation.
                 nodes_dict[v.id] = {
                     "id": v.id,
-                    "group": list(v.labels)[-1]  # 'group' corresponds
+                    "category": list(v.labels)[-1]  # 'category' corresponds
                     # to the final label of the entity, and is
                     # responsible for the node colouring.
                     if len(v.labels) > 0 else None,
