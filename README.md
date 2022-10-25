@@ -55,7 +55,7 @@ The first is to visualise a given list of nodes and edges, for example:
     ]
     d3_graph.visualise(nodes, links)
 
-This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats chicken, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) - they'll be shown in the tooltip when hovering over a node.
+This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats Jelly, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) - they'll be shown in the tooltip when hovering over a node.
 
 The `"id"`, `"category"` and `"name"` properties are required on each node. The `"name"` property is what will be written on the nodes in the visualisation, while the `"category"` will determine their colour (more on this below).
 
