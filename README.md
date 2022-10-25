@@ -55,6 +55,10 @@ The first is to visualise a given list of nodes and edges, for example:
 
 This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats chicken, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) - they'll be shown in the tooltip when hovering over a node.
 
+The `"id"`, `"category"` and `"name"` properties are required on each node. The `"name"` property is what will be written on the nodes in the visualisation, while the `"category"` will determine their colour (more on this below).
+
+For the links, `"source"` is the id of the source node, `"target"` is the id of the target node, and `"type"` is the type of relationship. These are all required.
+
 ![Screenshot of an example graph](https://github.com/nlp-tlp/d3_graph_vis/blob/main/image_1.png?raw=true)
 
 ### Visualising the result of a Neo4j Cypher query
@@ -77,7 +81,7 @@ For the Cypher visualisation, the way the graph decides on the colour of each no
 
     Entity, Item
 
-... it would be coloured based on the `Item` label.
+... it would be coloured based on the `Item` label. The colours are determined automatically, i.e. each category receives its own unique colour.
 
 ## Notes
 
