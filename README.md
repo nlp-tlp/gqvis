@@ -88,6 +88,5 @@ You can run `src/template/template.html` by itself (i.e. open it directly in Fir
 There are some improvements that could be made, such as
 
 -   Hiding all non-related nodes when clicking/dragging (like Echidna)
--   Tooltip on hover that shows the properties/labels of the nodes
 -   Make it look a bit nicer
 -   Try to figure out why the text gets blurry sometimes
