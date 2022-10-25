@@ -63,7 +63,7 @@ The second way is to use it to visualise the result of a Neo4j Cypher query. Thi
 
     d3_graph.connect_to_neo4j("password")
 
-Then, you can run the following:
+The argument is the password of your Neo4j database. Then, you can run the following:
 
     d3_graph.visualise_cypher('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
 
