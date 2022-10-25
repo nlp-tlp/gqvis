@@ -2,6 +2,8 @@
 
 A simple package for visualising a graph in a Jupyter notebook via D3.js. Supports lists of nodes/edges as well as Cypher queries to a Neo4j database.
 
+![Screenshot of an example graph](https://github.com/nlp-tlp/d3_graph_vis/blob/main/image_1.png?raw=true)
+
 ## Installation
 
 It's not an actual python package at the moment but the easiest way of importing it into a Jupyter notebook is to clone this repo into the same folder as the notebook, install the requirements from `requirements.txt`, then call:
@@ -59,8 +61,6 @@ The `"id"`, `"category"` and `"name"` properties are required on each node. The 
 
 For the links, `"source"` is the id of the source node, `"target"` is the id of the target node, and `"type"` is the type of relationship. These are all required.
 
-![Screenshot of an example graph](https://github.com/nlp-tlp/d3_graph_vis/blob/main/image_1.png?raw=true)
-
 ### Visualising the result of a Neo4j Cypher query
 
 The second way is to use it to visualise the result of a Neo4j Cypher query. This requires you to have a Neo4j database running. First, connect D3Graph to neo4j via:
@@ -72,6 +72,8 @@ The argument is the password of your Neo4j database. Then, you can run the follo
     d3_graph.visualise_cypher('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
 
 I am not sure whether it will work for literally any query, but it should.
+
+Note that unlike Neo4j, which has the 'connect result nodes' option to automatically connect nodes that have relationships, you will need to return the relationships explicitly in your query. Only relationships in the `RETURN` statement will be visualised.
 
 ### About the visualisation
 
