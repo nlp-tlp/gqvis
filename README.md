@@ -90,11 +90,3 @@ For the Cypher visualisation, the way the graph decides on the colour of each no
 I am using `neo4j` (the Neo4j driver for Python) rather than `py2neo` because it turns out `py2neo` does not output the exact same results as Neo4j. The way this whole thing works is by creating a list of nodes from all node objects returned by the cypher query, then creating links (by linking nodes via their ids). It didn't seem possible in `py2neo`, but was pretty straightforward with the `neo4j` package.
 
 You can run `src/template/template.html` by itself (i.e. open it directly in Firefox/Chrome) for development purposes. When running it this way, it will be populated by some dummy data specified in `src/template/dummyData.js`. It was a bit tricky to implement this as the template injection doesn't make sense in this context, so the code is a little confusing in places - I've tried to comment it to clarify what is going on.
-
-## TODO
-
-There are some improvements that could be made, such as
-
--   Hiding all non-related nodes when clicking/dragging (like Echidna)
--   Make it look a bit nicer
--   Try to figure out why the text gets blurry sometimes

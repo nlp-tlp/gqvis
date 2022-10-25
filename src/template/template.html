@@ -7,6 +7,10 @@
 <style>
   circle {
     cursor: pointer;
+
+  }
+  .not-selected {
+    opacity: 0.2;
   }
   text {
     pointer-events: none;
@@ -62,7 +66,7 @@
     font-weight: bold;
   }
   .tooltip-table tr td:last-child {
-    text-align:  left;
+    text-align: left;
   }
 
   .d3-graph-wrapper {
@@ -107,15 +111,28 @@
     },
   });
 
+  // Everything is wrapped in this require.js function - this way the variables don't
+  // go into the global scope and everything works even when multiple graphs are
+  // rendered.
   require(["d3"], function (d3) {
     const CHART_SELECTOR = dummyData ? "#chart" : "#chart-${chart_id}";
     const TOOLTIP_SELECTOR = dummyData ? "#tooltip" : "#tooltip-${chart_id}";
     const svg_chart = document.getElementById("svg-chart");
     const tooltip = document.getElementById("tooltip");
 
-    let tooltipNode = null; // Maintain the svg element the tooltip is currently
-    // bound to.
+    // Maintain the svg element the tooltip is currently bound to.
+    let tooltipNode = null;
     const tooltipTable = tooltip.querySelector(".tooltip-table");
+
+    // Maintain the currently selected node, if any, as well as all nodes/links
+    // related to it.
+    // When not null, it will have the following:
+    // {
+    //  baseNodeId: (the index of the base node being selected),
+    //  connectedNodeIds: (an array of all connected node ids),
+    //  connectedLinkIds: (an array of all connected link ids),
+    // };
+    let selectedNode = null;
 
     // Dynamically set the id of the svg and tooltip.
     // If in development mode (i.e. dummyData is not null), the id will just be
@@ -228,7 +245,7 @@
      */
     let drag = (simulation) => {
       function dragstarted(event) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        if (!event.active) simulation.alphaTarget(0.05).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
       }
@@ -254,16 +271,13 @@
     const scale = d3.scaleOrdinal(d3.schemeCategory10);
 
     const nodeSize = 40;
-
     let height = 600;
     let width = 600;
-
-    let transform = { x: 0, y: 0 }; // Maintain knowledge of translated x and y coords.
-    // Necessary for the tooltip.
 
     const links = data.links.map((d) => Object.create(d));
     const nodes = data.nodes.map((d) => Object.create(d));
 
+    // A list of colours that the colour map will be generated from.
     const colours = [
       "#99ffcc",
       "#ffcccc",
@@ -279,6 +293,11 @@
       "#fbafff",
     ];
 
+    /**
+     * Load the 'colour map' (i.e. mapping of category to colour).
+     * @param  {Array} nodes The node data.
+     * @return {Object}       The colour map.
+     */
     function loadColourMap(nodes) {
       let colourMap = {};
       // Load the colour map
@@ -292,35 +311,34 @@
       return colourMap;
     }
     colourMap = loadColourMap(nodes);
-
     const getColour = (d) => {
       return colourMap[d.category];
     };
 
+    // Initialise some d3 forces etc to make the graph behave properly.
     const simulation = d3
       .forceSimulation(nodes)
       .force(
         "link",
         d3.forceLink(links).id((d) => d.id)
       )
-      .force("charge", d3.forceManyBody().strength(-300))
-      // .force("x", d3.forceX())
-      // .force("y", d3.forceY())
+      // .force("charge", d3.forceManyBody().strength(-200))
       .force(
         "collide",
         d3.forceCollide((d) => nodeSize * 1.5)
       )
       .force("center", d3.forceCenter(width / 2, height / 2));
 
+    // Svg: the main container for rendering the graph.
     const svg = d3
       .select(CHART_SELECTOR)
       .attr("viewBox", [0, 0, width, height]);
 
     // svg_g: The 'g' within svg, which seems to make zooming/panning smoother
     const svg_g = svg.append("g");
-
     const defs = svg_g.append("defs");
 
+    // Marker: a definition for the triangles appearing at the end of each link.
     const marker = defs
       .selectAll("marker")
       .data(["type_1"])
@@ -330,7 +348,7 @@
         return `marker_${i}`;
       })
       .attr("viewBox", "0 -5 10 10")
-      .attr("refX", nodeSize + 3)
+      .attr("refX", 10)
       .attr("refY", 0)
       .attr("markerWidth", 6)
       .attr("markerHeight", 6)
@@ -339,6 +357,7 @@
       .attr("fill", "#444")
       .attr("d", "M0,-5L10,0L0,5");
 
+    // Link: The links between nodes.
     const link = svg_g
       .append("g")
       .attr("id", "links")
@@ -353,12 +372,45 @@
       .attr("marker-end", function (d, i) {
         return `url("#marker_0")`;
       })
-      .attr(
-        "d",
-        (d) =>
-          `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`
-      );
+      // 'd' attr is calculated on tick, not here.
 
+    /**
+     * When the mouse is unclicked, clear the selectedNode.
+     * This will remove the 'hide' class from all nodes in the tick function.
+     */
+    function deselectNode() {
+      selectedNode = null;
+    }
+
+    /**
+     * When a node is clicked, update selectedNode to reflect the id of that node,
+     * as well as the id of all nodes and links connected to it.
+     * @param  {[type]} d [description]
+     * @param  {[type]} i [description]
+     * @return {Object}   The selectedNode
+     *                    (baseNodeId, connectedNodeIds, connectedLinkIds).
+     */
+    function selectNode(d, i) {
+      let connectedNodeIds = new Set();
+      let connectedLinkIds = new Set();
+      for (let link of links) {
+        if (link.source.index === i.index || link.target.index === i.index) {
+          connectedLinkIds.add(link.index);
+          if (link.source.index === i.index) {
+            connectedNodeIds.add(link.target.index);
+          } else if (link.target.index === i.index) {
+            connectedNodeIds.add(link.source.index);
+          }
+        }
+      }
+      selectedNode = {
+        baseNodeId: i.index,
+        connectedNodeIds: connectedNodeIds,
+        connectedLinkIds: connectedLinkIds,
+      };
+    }
+
+    // Node: The nodes.
     const node = svg_g
       .append("g")
       .attr("stroke-width", 3)
@@ -371,79 +423,128 @@
       .attr("stroke", function (d) {
         return lightenDarkenColor(getColour(d), -15);
       })
+      .on("mousedown", selectNode)
       .call(drag(simulation));
 
+    // When a node is hovered over, set the tooltip accordingly.
+    // Clear the tooltip when the mouse leaves a node.
     d3.selectAll(".node").on("mouseover", setTooltip);
     d3.selectAll(".node").on("mouseleave", clearTooltip);
 
-    // node.append("title")
-    //   .text(d => d.id)
+    // When mouse up event (or pointer up event) fires, deselect the
+    // selected node if there is one.
+    document.addEventListener("mouseup", deselectNode);
+    document.addEventListener("pointerup", deselectNode);
 
+    // Text: The text appearing on the nodes.
     const text = svg_g
       .append("g")
       .selectAll("text")
       .data(nodes)
       .enter()
       .append("text")
-
       .text((d) => d.name)
       .attr("font-size", 12)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central");
 
-    const links_text = svg_g
+    // Links text: The text appearing on the links.
+    const link_text = svg_g
       .append("g")
       .selectAll("text")
       .data(links)
       .enter()
       .append("text")
-
       .text((d) => d.type)
       .attr("font-size", 10)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central");
 
-    // .clone(true).lower()
-    // .attr("fill", "none")
-    // .attr("stroke", "black")
-    // .attr("stroke-width", 3);
-
+    // Every time the simulation ticks, update the path of the links,
+    // the location of the nodes, the location of the text, and also the
+    // tooltip position.
     simulation.on("tick", () => {
-      // link
-      //   .attr("x1", (d) => d.source.x)
-      //   .attr("y1", (d) => d.source.y)
-      //   .attr("x2", (d) => d.target.x)
-      //   .attr("y2", (d) => d.target.y);
 
+      // Only draw the links starting from the edge of node 1 to node 2.
+      // This way, when the nodes go transparent, the links won't be visible underneath
+      // the nodes (which looks bad).
+      // Code for doing this was found here:
+      // https://www.appsloveworld.com/d3js/100/17/
+      // create-links-from-node-border-to-node-border-not-center-to-center
       link.attr(
         "d",
-        (d) =>
-          `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`
+        (d) => {
+          x1 = d.source.x + (Math.cos(Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x)) * nodeSize);
+
+          y1 = d.source.y + (Math.sin(Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x)) * nodeSize);
+
+          x2 = d.target.x - (Math.cos(Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x)) * nodeSize);
+
+          y2 = d.target.y - (Math.sin(Math.atan2(d.target.y - d.source.y, d.target.x - d.source.x)) * nodeSize);
+          return `M${x1},${y1}A0,0 0 0,1 ${x2},${y2}`
+        }
       );
 
       node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
       text.attr("x", (d) => Math.floor(d.x)).attr("y", (d) => Math.floor(d.y));
-      links_text
+      link_text
         .attr("x", (d) => (d.source.x + d.target.x) / 2)
         .attr("y", (d) => (d.source.y + d.target.y) / 2);
       updateTooltipPosition();
+
+      // If a node is currently selected, add a class to the nodes that are not
+      // related to that node.
+      //
+
+      node.classed("not-selected", function (d, i) {
+        return (
+          selectedNode &&
+          selectedNode.baseNodeId !== i &&
+          !selectedNode.connectedNodeIds.has(i)
+        );
+      });
+
+      text.classed("not-selected", function (d, i) {
+        return (
+          selectedNode &&
+          selectedNode.baseNodeId !== i &&
+          !selectedNode.connectedNodeIds.has(i)
+        );
+      });
+
+      link.classed("not-selected", function (d, i) {
+        return selectedNode && !selectedNode.connectedLinkIds.has(i);
+      });
+
+      link_text.classed("not-selected", function (d, i) {
+        return selectedNode && !selectedNode.connectedLinkIds.has(i);
+      });
     });
 
+    // Register the zoom handler.
     let zoom = d3.zoom().on("zoom", handleZoom);
 
+    /**
+     * A function to handle zooming/panning. Sets a transform on the svg_g container
+     * according to the zoom/pan level.
+     * @param  {[type]} e [description]
+     * @return {[type]}   [description]
+     */
     function handleZoom(e) {
       transform = e.transform;
       svg_g.attr("transform", e.transform);
       text.attr("font-size", 12 / e.transform.k ** 0.7);
-      links_text.attr("font-size", 10 / e.transform.k ** 0.7);
+      link_text.attr("font-size", 10 / e.transform.k ** 0.7);
     }
 
+    // Initialise the zooming.
     function initZoom() {
       svg.call(zoom);
     }
 
     initZoom();
 
+    // If dummyData is present (i.e. dev mode), display a message at the bottom.
     if (dummyData) {
       let div = document.createElement("div");
       div.innerHTML =
