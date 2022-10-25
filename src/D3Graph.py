@@ -38,7 +38,7 @@ class D3Graph(object):
             graph_password (str, optional): The password of the neo4j db.
         """
         self.graph_driver = GraphDatabase.driver(
-            NEO4J_HOST, auth=("neo4j", "password")
+            NEO4J_HOST, auth=("neo4j", graph_password)
         )
 
     def visualise(self, nodes: list, links: list):
