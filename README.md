@@ -55,6 +55,8 @@ The first is to visualise a given list of nodes and edges, for example:
 
 This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats chicken, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) - they'll be shown in the tooltip when hovering over a node.
 
+![Screenshot of an example graph](https://github.com/nlp-tlp/d3_graph_vis/blob/main/image_1.png?raw=true)
+
 ### Visualising the result of a Neo4j Cypher query
 
 The second way is to use it to visualise the result of a Neo4j Cypher query. This requires you to have a Neo4j database running. First, connect D3Graph to neo4j via:
