@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "gqvis"
-version = "0.1.2"
+version = "0.1.3"
 description = "A simple package for visualising the results of a cypher-based graph query to Neo4j in Python."
 authors = ["Michael Stewart <michael.stewart.webdev@gmail.com>"]
 readme = "README.md"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.7"
