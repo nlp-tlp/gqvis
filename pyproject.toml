@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "gqvis"
+version = "0.1.2"
+description = "A simple package for visualising the results of a cypher-based graph query to Neo4j in Python."
+authors = ["Michael Stewart <michael.stewart.webdev@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+neo4j = "^5.2.0"
+ipython = "7.34.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

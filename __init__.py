@@ -1,1 +1,1 @@
-from .src.D3Graph import D3Graph
+from .src.GQVis import GQVis

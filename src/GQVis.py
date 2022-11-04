@@ -14,7 +14,7 @@ from string import Template
 NEO4J_HOST = "neo4j://localhost:7687"
 
 
-class D3Graph(object):
+class GQVis(object):
 
     """A class for rendering a D3-based graph in an interactive python
     environment.
@@ -26,7 +26,7 @@ class D3Graph(object):
     """
 
     def __init__(self):
-        super(D3Graph, self).__init__()
+        super(GQVis, self).__init__()
         self.graph_driver = None
 
     def connect_to_neo4j(self, graph_password: str = "password"):
@@ -37,9 +37,14 @@ class D3Graph(object):
         Args:
             graph_password (str, optional): The password of the neo4j db.
         """
-        self.graph_driver = GraphDatabase.driver(
-            NEO4J_HOST, auth=("neo4j", graph_password)
-        )
+        try:
+            self.graph_driver = GraphDatabase.driver(
+                NEO4J_HOST, auth=("neo4j", graph_password)
+            )
+        except Exception as e:
+            raise ValueError(
+                "Unable to connect to Neo4j." "Please ensure it is running."
+            )
 
     def visualise(self, nodes: list, links: list):
         """Visualise the given list of nodes and links via a D3 graph.
