@@ -14,23 +14,23 @@ Simply run:
 
 First, import the package via
 
-    from gqvis import GQVis
-
-Then, instantiate it via:
-
-    graph = GQVis()
+    import gqvis
 
 There are two ways to use this class, detailed below.
 
 ### Visualising the result of a Neo4j Cypher query
 
-The first way to use the class is to visualise the result of a Neo4j Cypher query. This requires you to have a Neo4j database running. First, connect your GQVis object to neo4j via:
+The first way to use the class is to visualise the result of a Neo4j Cypher query. This requires you to have a Neo4j database running.
 
-    graph.connect_to_neo4j("password")
+You must first create an environment variable called `NEO4J_PASSWORD` and set the value of this variable to the password of your Neo4j graph. In Jupyter, you can simply do:
 
-The argument is the password of your Neo4j database. Then, you can run the following:
+    %env NEO4J_PASSWORD=password
 
-    graph.visualise_cypher('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
+The default password is 'password', so if your Neo4j graph already has this password there is no need to set this variable.
+
+Then, you can run the following:
+
+    gqvis.visualise_cypher('MATCH (n1:Entity)-[r]->(n2:Entity) RETURN n1, r, n2 LIMIT 500')
 
 Note that unlike Neo4j, which has the 'connect result nodes' option to automatically connect nodes that have relationships, you will need to return the relationships explicitly in your query. Only relationships in the `RETURN` statement will be visualised.
 
@@ -67,7 +67,7 @@ You can also visualise a given list of nodes and edges - No Neo4j required. For 
           "type": "LIKES",
         },
     ]
-    graph.visualise(nodes, links)
+    gqvis.visualise_list(nodes, links)
 
 This will create a graph visualisation with three nodes ("Bob", "Jelly", "Alice"), and two links (Bob eats Jelly, Alice likes Bob). You can have other properties (such as `"age": 45` on Bob) - they'll be shown in the tooltip when hovering over a node.
 

@@ -1,1 +1,1 @@
-from .src.GQVis import GQVis
+from .src.gqvis import visualise_cypher, visualise_list

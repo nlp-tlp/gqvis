@@ -8,100 +8,92 @@ import random
 
 import neo4j
 from neo4j import GraphDatabase
+from neo4j.exceptions import AuthError
 from IPython.core.display import display, HTML
 from string import Template
 
 NEO4J_HOST = "neo4j://localhost:7687"
 
 
-class GQVis(object):
+def visualise_list(nodes: list, links: list):
+    """Visualise the given list of nodes and links via a D3 graph.
 
-    """A class for rendering a D3-based graph in an interactive python
-    environment.
+    Args:
+        nodes (list): The list of nodes.
+        links (list): The list of links (edges).
 
-    Attributes:
-        d3_ready (bool): Whether d3 is ready. You must call init_d3 prior to
-        visualise() otherwise it won't work.
-        driver (neo4j.driver): The neo4j driver. Loaded upon instantiating.
+    Returns:
+        HTML: A HTML snippet with the graph rendered inside of it.
+
+    Raises:
+        ValueError: If any arguments are no good.
+    """
+    if type(nodes) != list:
+        raise ValueError(
+            "Illegal argument: The first argument must be a list of nodes."
+        )
+    if len(nodes) == 0:
+        raise ValueError(
+            "Illegal argument: nodes must contain at least "
+            "one node to render."
+        )
+    if type(links) != list:
+        raise ValueError(
+            "Illegal argument: The second argument must be a " "list of links."
+        )
+
+    template = _load_template()
+
+    return _build_html_template(nodes, links)
+
+
+def visualise_cypher(query: str):
+    """Visualise the given cypher query via a D3 graph.
+
+    Args:
+        query (str): The Cypher query to visualise.
+
+    Returns:
+        HTML: A HTML snippet with the graph rendered inside of it.
+
+    Raises:
+        ValueError: If connect_to_neo4j has not yet been called.
     """
 
-    def __init__(self):
-        super(GQVis, self).__init__()
-        self.graph_driver = None
+    graph_driver = _connect_to_neo4j()
 
-    def connect_to_neo4j(self, graph_password: str = "password"):
-        """Connect to Neo4j so that cypher queries can be visualised.
-        At the moment, only connects to the default port (feel free to change
-        if you need to run on docker or something.)
+    # Run the query via neo4j.
+    with graph_driver.session() as session:
+        nodes, links = session.read_transaction(_run_neoj4_query, query)
 
-        Args:
-            graph_password (str, optional): The password of the neo4j db.
-        """
-        try:
-            self.graph_driver = GraphDatabase.driver(
-                NEO4J_HOST, auth=("neo4j", graph_password)
-            )
-        except Exception as e:
-            raise ValueError(
-                "Unable to connect to Neo4j." "Please ensure it is running."
-            )
+    return _build_html_template(nodes, links)
 
-    def visualise(self, nodes: list, links: list):
-        """Visualise the given list of nodes and links via a D3 graph.
 
-        Args:
-            nodes (list): The list of nodes.
-            links (list): The list of links (edges).
+def _connect_to_neo4j():
+    """Connect to Neo4j so that cypher queries can be visualised.
+    At the moment, only connects to the default port (feel free to change
+    if you need to run on docker or something.)
 
-        Returns:
-            HTML: A HTML snippet with the graph rendered inside of it.
-
-        Raises:
-            ValueError: If any arguments are no good.
-        """
-        if type(nodes) != list:
-            raise ValueError(
-                "Illegal argument: The first argument must be a list of nodes."
-            )
-        if len(nodes) == 0:
-            raise ValueError(
-                "Illegal argument: nodes must contain at least "
-                "one node to render."
-            )
-        if type(links) != list:
-            raise ValueError(
-                "Illegal argument: The second argument must be a "
-                "list of links."
-            )
-
-        template = _load_template()
-
-        return _build_html_template(nodes, links)
-
-    def visualise_cypher(self, query: str):
-        """Visualise the given cypher query via a D3 graph.
-
-        Args:
-            query (str): The Cypher query to visualise.
-
-        Returns:
-            HTML: A HTML snippet with the graph rendered inside of it.
-
-        Raises:
-            ValueError: If connect_to_neo4j has not yet been called.
-        """
-        if self.graph_driver is None:
-            raise ValueError(
-                "Cannot visualise Neo4j query as you have not yet"
-                " connected this D3Graph to Neo4j. Please run "
-                "connect_to_neo4j()."
-            )
-
-        # Run the query via neo4j.
-        with self.graph_driver.session() as session:
-            nodes, links = session.read_transaction(_run_neoj4_query, query)
-
-        return _build_html_template(nodes, links)
+    Args:
+        graph_password (str, optional): The password of the neo4j db.
+    """
+    graph_password: str = "password"
+    if "NEO4J_PASSWORD" in os.environ:
+        graph_password = os.environ["NEO4J_PASSWORD"]
+    try:
+        graph_driver = GraphDatabase.driver(
+            NEO4J_HOST, auth=("neo4j", graph_password)
+        )
+        return graph_driver
+    except AuthError as e:
+        raise ValueError(
+            f"Could not connect to Neo4j as the password "
+            f"'{graph_password}' is not correct."
+        )
+    except Exception as e:
+        raise ValueError(
+            "Unable to connect to Neo4j. Please ensure it is running."
+        )
 
 
 def _build_html_template(nodes: list, links: list):
