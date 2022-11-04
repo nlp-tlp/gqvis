@@ -16,7 +16,7 @@ First, import the package via
 
     import gqvis
 
-There are two ways to use this class, detailed below.
+There are two ways to use this package, detailed below.
 
 ### Visualising the result of a Neo4j Cypher query
 
