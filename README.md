@@ -1,8 +1,8 @@
 # GQVis
 
-A simple package for visualising the results of a Neo4j cypher query in an interactive Python environment (such as Jupyter notebook).
+A simple package for visualising the results of a graph query (to Neo4j) in an interactive Python environment (such as Jupyter notebook).
 
-![Screenshot of an example graph](https://github.com/nlp-tlp/d3_graph_vis/blob/main/image_1.png?raw=true)
+![Screenshot of an example graph](https://github.com/nlp-tlp/gqvis/blob/main/image_1.png?raw=true)
 
 ## Installation
 
