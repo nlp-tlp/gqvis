@@ -126,7 +126,9 @@ def _load_template():
     """
     current_path = pathlib.Path(__file__).parent.resolve()
     template = ""
-    with open(os.path.join(current_path, "template/template.html"), "r") as f:
+    with open(
+        os.path.join(current_path, "template", "template.html"), "r"
+    ) as f:
         template = f.read()
     return template
 
